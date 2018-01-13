@@ -8,20 +8,23 @@ export default function sketch(s) {
   let graphData;
   let dataFile = '../../resources/data/sugar.txt';
   let graph;
+  let results;
   let colors = new Array();
   let numberOfColors = 0;
+  let _canvas;
 
   s.preload = () => {
     graphData = s.loadStrings('../gc/' + dataFile );
   }
 
   s.setup = () => {
-    s.createCanvas(_windowWidth, _windowHeight);
+    _canvas = s.createCanvas(_windowWidth, _windowHeight);
     graphData = graphData.toString().split(',');
     graph = new Graph();
     // graph.showInfo();
     graph.greedyColoring();
     console.log(colors);
+    results = new Results();
   };
 
   s.draw = () => {
@@ -29,6 +32,19 @@ export default function sketch(s) {
     // population.run();
     graph.drawLines();
     graph.drawVertices();
+    results.show();
+  }
+
+  function Results() {
+    this.position = s.createVector(_windowWid th*0.005, _windowHeight*0.005);
+    this.show = () => {
+      s.textSize(32);
+      s.text('word', this.position.x, this.position.y);
+      s.fill(0, 102, 153);
+      s.text('word', this.position.x, this.position.y);
+      s.fill(0, 102, 153, 51);
+      s.text('word', this.position.x, this.position.y);
+    }
   }
 
   function Graph() {
