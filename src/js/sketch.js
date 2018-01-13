@@ -36,9 +36,10 @@ export default function sketch(s) {
   }
 
   function Results() {
-    this.position = s.createVector(_windowWid th*0.005, _windowHeight*0.005);
+    this.fontSize = 32;
+    this.position = s.createVector(5, this.fontSize);
     this.show = () => {
-      s.textSize(32);
+      s.textSize(this.fontSize);
       s.text('word', this.position.x, this.position.y);
       s.fill(0, 102, 153);
       s.text('word', this.position.x, this.position.y);
