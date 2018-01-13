@@ -7,12 +7,20 @@ export default function sketch(s) {
 
   //raw file
   let dataFile = '../../resources/data/sugar.txt';
+  //graph in the data file
   let graphData;
+
   let graph;
   let results;
   let colors = new Array();
   let numberOfColors = 0;
   let _canvas;
+  let pivotPoint = {
+    x: s.mouseX,
+    y: s.mouseY
+  }
+
+  let skewMode = false;
 
   s.preload = () => {
     graphData = s.loadStrings('../gc/' + dataFile );
@@ -28,6 +36,17 @@ export default function sketch(s) {
     console.log(colors);
     results = new Results();
   };
+
+  s.mousePressed = () => {
+    if (skewMode) {
+      graph.assignSkew();
+    } else {
+      pivotPoint.x = s.mouseX;
+      pivotPoint.y = s.mouseY;
+      // graph.updateOffset();
+    }
+    skewMode = !skewMode;
+  }
 
   s.draw = () => {
     //background gray color
@@ -112,20 +131,45 @@ export default function sketch(s) {
         vertex.assignGreedyColor();
       });
     }
+
+    //to set the new position values based on the skew
+    this.assignSkew = () => {
+      this.vertices.forEach(vertex => {
+        let skewedPosition = vertex.calculatePosition();
+        vertex.position.x = skewedPosition[0];
+        vertex.position.y = skewedPosition[1];
+      });
+    }
+
+    this.updateOffset = () => {
+      this.vertices.forEach(vertex => {
+        vertex.offset.x = vertex.position.x - pivotPoint.x;
+        vertex.offset.y = vertex.position.y - pivotPoint.y;
+      });
+    }
   }
 
   function Vertex(index) {
     //number of the vertex in the graph
     this.index = index;
 
+    this.multiplier = s.random(1);
+
     //center position of each vertex
     this.position = s.createVector(_windowWidth*0.2 + s.random(0.7)*_windowWidth, _windowHeight*0.1+s.random(0.8)*_windowHeight);
 
     //used for skewing graph while mouse is moving
     this.offset = {
-      x: this.position.x - _windowWidth/2,
-      y: this.position.y - _windowHeight/2
+      x: this.position.x - pivotPoint.x,
+      y: this.position.y - pivotPoint.y
     };
+
+    //calculate the vertex center based on the mouse position on the screen
+    this.calculatePosition = () => {
+      let x = this.position.x + this.multiplier * this.offset.x * (s.mouseX-pivotPoint.x/2)*0.01;
+      let y = this.position.y + this.multiplier * this.offset.y * (s.mouseY-pivotPoint.y/2)*0.01;
+      return [x, y];
+    }
 
     //set of all vertex's neighbors
     this.neighbors = new Set();
@@ -150,7 +194,8 @@ export default function sketch(s) {
       if (this.colorIndex != -1) {
         s.fill(colors[this.colorIndex]);
       }
-      s.ellipse(this.position.x, this.position.y, this.radius, this.radius);
+      let skewedPosition = skewMode ? this.calculatePosition() : [this.position.x, this.position.y];
+      s.ellipse(skewedPosition[0], skewedPosition[1], this.radius, this.radius);
       s.pop();
     }
 
@@ -159,7 +204,9 @@ export default function sketch(s) {
       this.neighbors.forEach(neighbourIndex => {
         s.push();
         s.stroke(this.lineColor);
-        s.line(this.position.x, this.position.y, graph.vertices[neighbourIndex].position.x, graph.vertices[neighbourIndex].position.y);
+        let skewedPositionA = skewMode ? this.calculatePosition() : [this.position.x, this.position.y];
+        let skewedPositionB = skewMode ? graph.vertices[neighbourIndex].calculatePosition() : [graph.vertices[neighbourIndex].position.x, graph.vertices[neighbourIndex].position.y];
+        s.line(skewedPositionA[0], skewedPositionA[1], skewedPositionB[0], skewedPositionB[1]);
         s.pop();
       });
     }
