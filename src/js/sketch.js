@@ -43,7 +43,6 @@ export default function sketch(s) {
     } else {
       pivotPoint.x = s.mouseX;
       pivotPoint.y = s.mouseY;
-      // graph.updateOffset();
     }
     skewMode = !skewMode;
   }
@@ -141,12 +140,6 @@ export default function sketch(s) {
       });
     }
 
-    this.updateOffset = () => {
-      this.vertices.forEach(vertex => {
-        vertex.offset.x = vertex.position.x - pivotPoint.x;
-        vertex.offset.y = vertex.position.y - pivotPoint.y;
-      });
-    }
   }
 
   function Vertex(index) {
@@ -158,16 +151,12 @@ export default function sketch(s) {
     //center position of each vertex
     this.position = s.createVector(_windowWidth*0.2 + s.random(0.7)*_windowWidth, _windowHeight*0.1+s.random(0.8)*_windowHeight);
 
-    //used for skewing graph while mouse is moving
-    this.offset = {
-      x: this.position.x - pivotPoint.x,
-      y: this.position.y - pivotPoint.y
-    };
+
 
     //calculate the vertex center based on the mouse position on the screen
     this.calculatePosition = () => {
-      let x = this.position.x + this.multiplier * this.offset.x * (s.mouseX-pivotPoint.x/2)*0.01;
-      let y = this.position.y + this.multiplier * this.offset.y * (s.mouseY-pivotPoint.y/2)*0.01;
+      let x = this.position.x + this.multiplier * (s.mouseX-pivotPoint.x);
+      let y = this.position.y + this.multiplier * (s.mouseY-pivotPoint.y);
       return [x, y];
     }
 
