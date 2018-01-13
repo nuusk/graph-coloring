@@ -2,12 +2,14 @@ import p5 from 'p5';
 export default function sketch(s) {
   let x, y, backgroundColor;
 
-  const _windowWidth = 640;
-  const _windowHeight = 480;
+  const _windowWidth = window.innerWidth;
+  const _windowHeight = window.innerHeight;
 
   let graphData;
-  let dataFile = 'kam2';
+  let dataFile = '../../resources/data/sugar.txt';
   let graph;
+  let colors = new Array();
+  let numberOfColors = 0;
 
   s.preload = () => {
     graphData = s.loadStrings('../gc/' + dataFile );
@@ -18,12 +20,15 @@ export default function sketch(s) {
     graphData = graphData.toString().split(',');
     graph = new Graph();
     // graph.showInfo();
+    graph.greedyColoring();
+    console.log(colors);
   };
 
   s.draw = () => {
-    s.background(0);
+    s.background(44, 44, 44);
     // population.run();
-    graph.update();
+    graph.drawLines();
+    graph.drawVertices();
   }
 
   function Graph() {
@@ -48,7 +53,6 @@ export default function sketch(s) {
         console.log(neighbors);
         console.error(err);
       }
-
     }
 
     this.showInfo = () => {
@@ -57,9 +61,21 @@ export default function sketch(s) {
       });
     }
 
-    this.update = () => {
+    this.drawVertices = () => {
       this.vertices.forEach(vertex => {
         vertex.show();
+      });
+    }
+
+    this.drawLines = () => {
+      this.vertices.forEach(vertex => {
+        vertex.connectNeighbors();
+      });
+    }
+
+    this.greedyColoring = () => {
+      this.vertices.forEach(vertex => {
+        vertex.assignGreedyColor();
       });
     }
   }
@@ -68,7 +84,9 @@ export default function sketch(s) {
     this.index = index;
     this.position = s.createVector(_windowWidth*0.1 + s.random(0.8)*_windowWidth, _windowHeight*0.1+s.random(0.8)*_windowHeight);
     this.neighbors = new Set();
-    this.radius = 25 + s.random(1)*5;
+    this.radius = 25 + s.random(1)*10;
+    this.colorIndex = -1;
+    this.lineColor = s.random(12);
 
     this.relateNeighbors = (neighbourIndex) => {
       this.neighbors.add(neighbourIndex);
@@ -77,9 +95,44 @@ export default function sketch(s) {
 
     this.show = () => {
       s.push();
+      // console.log(this.color);
+      s.noStroke();
+      if (this.colorIndex != -1) {
+        s.fill(colors[this.colorIndex]);
+      }
       s.ellipse(this.position.x, this.position.y, this.radius, this.radius);
       s.pop();
     }
+
+    this.connectNeighbors = () => {
+      this.neighbors.forEach(neighbourIndex => {
+        s.push();
+        s.stroke(this.lineColor);
+        s.line(this.position.x, this.position.y, graph.vertices[neighbourIndex].position.x, graph.vertices[neighbourIndex].position.y);
+        s.pop();
+      });
+    }
+
+    this.assignGreedyColor = () => {
+      let alreadyUsed = new Set();
+      this.neighbors.forEach(neighbour => {
+        // console.log(neighbour);
+        alreadyUsed.add(graph.vertices[neighbour].colorIndex);
+      });
+      for (let i=0; i<colors.length; i++) {
+        if (alreadyUsed.has(i)) continue;
+        else {
+          this.colorIndex = i;
+          console.log('aktualny kolor: ' + this.colorIndex);
+          return;
+        }
+      }
+      // console.log('wszystkie sie powtarzaly');
+      this.colorIndex = colors.length;
+      colors.push(s.color(s.random(255), s.random(255), s.random(255)));
+      console.log('nowy kolor ' + this.colorIndex);
+      // console.log(this.color);
+    }
   }
-  
+
 }
