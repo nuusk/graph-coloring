@@ -37,14 +37,13 @@ export default function sketch(s) {
 
   function Results() {
     this.fontSize = 32;
+    this.fontColor = s.color(220, 220, 220);
     this.position = s.createVector(5, this.fontSize);
     this.show = () => {
       s.textSize(this.fontSize);
-      s.text('word', this.position.x, this.position.y);
-      s.fill(0, 102, 153);
-      s.text('word', this.position.x, this.position.y);
-      s.fill(0, 102, 153, 51);
-      s.text('word', this.position.x, this.position.y);
+      s.fill(this.fontColor);
+      s.text('GREEDY ALGORITHM', this.position.x, this.position.y);
+      s.text('Colors used: ' + colors.length, this.position.x, this.position.y*2);
     }
   }
 
