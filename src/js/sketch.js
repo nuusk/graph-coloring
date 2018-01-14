@@ -120,7 +120,8 @@ export default function sketch(s) {
 
     this.showInfo = () => {
       this.graphs.forEach(graph => {
-        console.log(graph);
+        graph.calculateFitness();
+        console.log(graph.fitness);
       });
     }
   }
@@ -130,6 +131,7 @@ export default function sketch(s) {
     this.index = index;
     //graph is made from vertices that are hold in this array
     this.vertices = [];
+    this.fitness = -1;
 
     //number of vertices
     this.size = parseInt(graphData[0], 10);
@@ -212,32 +214,25 @@ export default function sketch(s) {
       });
     }
 
-    //counts the number of all colors used to color the graph
-    this.numberOfColors = () => {
-      let tmp = new Set();
-      this.vertices.forEach(vertex => {
-        tmp.add(vertex.colorIndex);
-      });
-      return tmp.size;
-    }
 
-    //counts the number of bad edges in the graph
-    this.numberOfBadEdges = () => {
-      let tmp = 0;
+    //fitness value of the graph means how likely we are to pick this graph as a parent
+    this.calculateFitness = () => {
+      let setOfColors = new Set();
+      let numberOfBadEdges = 0;
       this.vertices.forEach(vertex => {
-        vertex.neighors.forEach(neighbour => {
-          if (vertex.colorIndex == this.vertices[neighour].colorIndex) {
-            tmp++;
+        //colors
+        setOfColors.add(vertex.colorIndex);
+        //bad edges
+        vertex.neighbors.forEach(neighbour => {
+          if (vertex.colorIndex == this.vertices[neighbour].colorIndex) {
+            numberOfBadEdges++;
           }
         });
       });
       //every edge is counted twice, so we divide it by half to get the actual number of bad edges
-      return tmp/2;
-    }
+      numberOfBadEdges = numberOfBadEdges/2;
 
-    //fitness value of the graph means how likely we are to pick this graph as a parent
-    this.fitness = () => {
-      return this.numberOfBadEdges * this.size + this.numberOfColors;
+      this.fitness = numberOfBadEdges * this.size + setOfColors.size;
     }
 
   }
