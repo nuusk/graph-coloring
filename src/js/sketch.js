@@ -73,7 +73,8 @@ export default function sketch(s) {
     population.generate();
 
     population.selection();
-    population.showInfo();
+    population.crossover();
+    // population.showInfo();
 
     results = new Results();
   };
@@ -101,9 +102,12 @@ export default function sketch(s) {
     this.size = POPULATION_SIZE;
 
     this.graphs = [];
+    this.parents = [];
 
     //the fitness of the whole population;
     this.fitness = 0;
+
+    this.worstGraph = 0;
 
     //for creating first generation
     this.generate = () => {
@@ -123,12 +127,74 @@ export default function sketch(s) {
     }
 
     this.selection = () => {
+      //this function will add the fitness of each graph to the population fitness
+      //hence we have to make it 0 before starting the procedure
       this.fitness = 0;
       this.graphs.forEach(graph => {
         graph.calculateFitness();
+      });
+      //the current min fitness is temporarly the fitness of the first element
+      this.minFitness = this.graphs[1].fitness;
+      //find the min fitness
+      this.graphs.forEach(graph => {
+        if (graph.fitness < this.minFitness) {
+          this.minFitness = graph.fitness;
+          this.worstGraphIndex = graph.index;
+        }
+      });
+      console.log(this.worstGraph);
+      console.log(this.graphs);
+      //find probability to be selected as a parent by normalizing fitness
+      this.graphs.forEach(graph => {
         graph.normalizeFitness();
       });
       console.log('POPULATION FITNESS : ' + this.fitness);
+
+      let indexA = 1;
+      let parentA = s.random(1);
+      let indexB = 1;
+      let parentB = s.random(1);
+
+      //making a list that will help us pick the graph according to the probability
+      while (parentA > 0) {
+        parentA = parentA - this.graphs[indexA].probability;
+        indexA++;
+      }
+      while (parentB > 0) {
+        parentB = parentB - this.graphs[indexB].probability;
+        indexB++;
+      }
+      indexA--;
+      indexB--;
+
+      //this parents contains two selected parents
+      this.parents.push(this.graphs[indexA]);
+      this.parents.push(this.graphs[indexB]);
+    }
+
+    this.crossover = () => {
+      let dna = [];
+      let chromosomeSize = this.parents[0].size;
+      //crosspoint is a random value between 0 and the number of vertices in the graph
+      let crosspoint = s.floor(s.random(chromosomeSize));
+      for (let i=1; i<=chromosomeSize; i++) {
+
+        if (i < crosspoint) {
+          dna.push(this.parents[0].vertices[i].colorIndex);
+        } else {
+          dna.push(this.parents[1].vertices[i].colorIndex);
+        }
+        console.log('color ' + dna[i]);
+      }
+      //eliminate the worst graph and generate the new population element with given dna
+      console.log('survival of the fittest');
+      console.log('dna: ');
+      console.log(dna);
+      console.log('~dead: ');
+      console.log(this.graphs[this.worstGraphIndex]);
+      this.graphs[this.worstGraphIndex] = new Graph(this.worstGraphIndex, dna);
+      console.log('~born: ');
+      console.log(this.graphs[this.worstGraphIndex]);
     }
   }
 
@@ -152,17 +218,20 @@ export default function sketch(s) {
 
       s.text('GENETIC', this.position.x, this.position.y*6);
       s.text('Colors used: ' + geneticColorsNumber, this.position.x, this.position.y*7);
+      s.text('Fitness: ' + s.floor(population.fitness), this.position.x, this.position.y*8);
 
     }
   }
 
-  function Graph(index = 0) {
+  function Graph(index = 0, dna) {
     //index in the population
     this.index = index;
     //graph is made from vertices that are hold in this array
     this.vertices = [];
     this.fitness = -1;
     this.probability = 0;
+
+
 
     //number of vertices
     this.size = parseInt(graphData[0], 10);
@@ -171,6 +240,10 @@ export default function sketch(s) {
     //!! INDEXING FROM 1 !!
     for (let i=1; i<=this.size; i++) {
       this.vertices[i] = new Vertex(i);
+      if (dna) {
+        console.log('created new graph with given dna');
+        this.vertices[i].colorIndex = dna[i];
+      }
     }
 
     //assign vertices to their neighbors
