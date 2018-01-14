@@ -103,7 +103,7 @@ export default function sketch(s) {
       for (let i=1; i<=this.size; i++) {
         this.graphs[i] = new Graph(i);
         this.graphs[i].randomize();
-        this.graphs[i].mutation();
+        this.graphs[i].mutationAlpha();
       }
     }
 
@@ -151,23 +151,18 @@ export default function sketch(s) {
     }
 
     //this mutation is applied to eliminate incorrect coloring.
-    //without this mutation there is a change that the neighbours would have the same color.
-    this.mutation = () => {
+    //there still is a chance that vertices will end up with incorrect coloring
+    //however this steps adds variation that is needed for the population to evolve
+    this.mutationAlpha = () => {
       this.vertices.forEach(vertex => {
         vertex.neighbors.forEach(neighbour => {
           if (vertex.colorIndex == this.vertices[neighbour].colorIndex) {
-            //if neighbour has the same color, assign new color to the current vertex and push it to the colors array
-            vertex.colorIndex = geneticColorsNumber;
-            geneticColorsNumber++;
+            //if neighbour has the same color, assign new color from the list of all colors
+            vertex.colorIndex = s.random(greedyColorsNumber);
+            // geneticColorsNumber++;
           }
         });
       })
-      //before the mutation ends, we add the new colors needed by this graph to the colors Array
-      //that way the next graph in the population could use more colors to avoid conflicts
-      for (let i=0; i<geneticColorsNumber-colors.length; i++) {
-        colors.push(s.color(s.random(255), s.random(255), s.random(255)));
-      }
-      geneticColorsNumber = colors.length;
     }
 
     //FOR DEBUGGING
