@@ -63,7 +63,12 @@ export default function sketch(s) {
 
   s.draw = () => {
     //background gray color
-    s.background(44, 44, 44);
+    if (skewMode) {
+      s.background(40, 50, 60);
+    } else {
+      s.background(44, 44, 44);
+    }
+
     if (drawMode) {
       //draw lines between vertices
       graph.drawLines();
@@ -83,11 +88,18 @@ export default function sketch(s) {
     this.show = () => {
       s.textSize(this.fontSize);
       s.fill(this.fontColor);
-      s.text('GREEDY ALGORITHM', this.position.x, this.position.y);
-      s.text('Colors used: ' + greedyColorsNumber, this.position.x, this.position.y*2);
 
-      s.text('GENETIC ALGORITHM', this.position.x, this.position.y*4);
-      s.text('Colors used: ' + geneticColorsNumber, this.position.x, this.position.y*5);
+      if (skewMode) {
+        s.text(' ~ skew mode (click to swap) ~', this.position.x, this.position.y);
+      } else {
+        s.text(' ~ (click to skew) ~', this.position.x, this.position.y);
+      }
+      s.text('GREEDY', this.position.x, this.position.y*3);
+      s.text('Colors used: ' + greedyColorsNumber, this.position.x, this.position.y*4);
+
+      s.text('GENETIC', this.position.x, this.position.y*6);
+      s.text('Colors used: ' + geneticColorsNumber, this.position.x, this.position.y*7);
+
     }
   }
 
@@ -240,8 +252,6 @@ export default function sketch(s) {
     //center position of each vertex
     this.position = s.createVector(_windowWidth*0.2 + s.random(0.7)*_windowWidth, _windowHeight*0.1+s.random(0.8)*_windowHeight);
 
-
-
     //calculate the vertex center based on the mouse position on the screen
     this.calculatePosition = () => {
       let x = this.position.x + this.multiplier * (s.mouseX-pivotPoint.x);
@@ -256,9 +266,6 @@ export default function sketch(s) {
 
     //color index determines the value of color from the colors array (global)
     this.colorIndex = -1;
-
-    //color of the edge
-    this.lineColor = s.random(12);
 
     //function used for adding neighbors to the vertex
     this.relateNeighbors = (neighbourIndex) => {
@@ -281,7 +288,7 @@ export default function sketch(s) {
     this.connectNeighbors = () => {
       this.neighbors.forEach(neighbourIndex => {
         s.push();
-        s.stroke(this.lineColor);
+        s.stroke(skewMode ? 200:12);
         let skewedPositionA = skewMode ? this.calculatePosition() : [this.position.x, this.position.y];
         let skewedPositionB = skewMode ? graph.vertices[neighbourIndex].calculatePosition() : [graph.vertices[neighbourIndex].position.x, graph.vertices[neighbourIndex].position.y];
         s.line(skewedPositionA[0], skewedPositionA[1], skewedPositionB[0], skewedPositionB[1]);
