@@ -7,17 +7,14 @@ export default function sketch(s) {
 
   const POPULATION_SIZE = 100;
   //how many generations until we stop the algorithm
-  const GENERATION_LIMIT = 100;
+  const GENERATION_LIMIT = 1000000000;
 
   const GAMMA_RATE = 0.1;
 
-  //how many frames for each iteration of drawing function
-  const frameTime = 100;
-  //holds the value of the current frame. it is incremented with each draw loop
-  let currentFrame = 0;
+  let generationNumber = 0;
 
   //raw file
-  let dataFile = '../../resources/data/kakao.txt';
+  let dataFile = '../../resources/data/chocolate.txt';
   //graph in the data file
   let graphData;
 
@@ -50,7 +47,7 @@ export default function sketch(s) {
 
   //draw mode makes the graph appear on the screen
   //should be disabled for very large instances
-  let drawMode = true;
+  let drawMode = false;
 
   //skew mode makes the graph moves according to the mouse movement
   let skewMode = false;
@@ -58,6 +55,8 @@ export default function sketch(s) {
   s.preload = () => {
     graphData = s.loadStrings('../gc/' + dataFile );
   }
+
+  let buttons
 
   s.mousePressed = () => {
     if (skewMode) {
@@ -82,50 +81,69 @@ export default function sketch(s) {
     population.generate();
     population.selection();
     population.crossover();
-    // population.showInfo();
+    //population.showInfo();
 
     results = new Results();
   };
 
   s.draw = () => {
-    //background gray color
-    if (skewMode) {
-      s.background(40, 50, 60);
-    } else {
-      s.background(44, 44, 44);
-    }
-
-    if (drawMode) {
-      // // GREEDY
-      // //draw lines between vertices
-      // graph.drawLines();
-      // //draw vertices on top of that
-      // graph.drawVertices();
+    if (generationNumber < GENERATION_LIMIT) {
+      //background gray color
+      if (skewMode) {
+        s.background(40, 50, 60);
+      } else {
+        s.background(44, 44, 44);
+      }
 
       population.selection();
       population.crossover(); //creates new element and applies mutationBeta to it
-    }
-    //show the results
-    results.show();
 
-    currentFrame++;
+      if (drawMode) {
+        // GREEDY
+        //draw lines between vertices
+        // graph.drawLines();
+        //draw vertices on top of that
+        // graph.drawVertices()
+      }
+      //show the results
+      results.show();
+    }
+    generationNumber++;
   }
 
+  function Button() {
+    this.radius = 30;
+    this.position.x = 100;
+    this.position.y = _windowHeight - 100;
+
+    this.show = () => {
+      s.push();
+      s.noStroke();
+      s.ellipse(this.position.x, this.position.y, this.radius, this.radius);
+      s.pop();
+    }
+  }
 
   function Population() {
     this.size = POPULATION_SIZE;
 
+    //array of all graphs in the population
     this.graphs = [];
+    //in each population, two graphs will be parents that will produce a child
     this.parents = [];
 
     //the fitness of the whole population;
     this.fitness = 0;
+    this.bestFitness = 0;
 
-    this.worstGraph = 0;
+    //index of the graph that will be replaced by the newborn
+    this.EX = 0;
 
+    //colors used by the child in the population
     this.colorsUsed = 0;
 
     //for creating first generation
+    //runs only once during initialization step
     this.generate = () => {
       //!! indexing from 1 !!
       for (let i=1; i<=this.size; i++) {
@@ -135,6 +153,7 @@ export default function sketch(s) {
       }
     }
 
+    //displaying info about the population ~ debug mode
     this.showInfo = () => {
       this.graphs.forEach(graph => {
         console.log('F: ' + graph.fitness);
@@ -142,8 +161,7 @@ export default function sketch(s) {
       });
     }
 
-
-
+    //selection will choose two parents of the population
     this.selection = () => {
       //this function will add the fitness of each graph to the population fitness
       //hence we have to make it 0 before starting the procedure
@@ -158,20 +176,18 @@ export default function sketch(s) {
       this.graphs.forEach(graph => {
         if (graph.fitness < this.minFitness) {
           this.minFitness = graph.fitness;
-          this.worstGraphIndex = graph.index;
+          //the graph that will be extinct from the population
+          //it will be replaced by the newborn
+          this.EXIndex = graph.index;
         }
         if (graph.fitness > this.maxFitness) {
           this.maxFitness = graph.fitness;
         }
       });
-      console.log(this.worstGraph);
-      console.log(this.graphs);
       //find probability to be selected as a parent by normalizing fitness
       this.graphs.forEach(graph => {
         graph.normalizeFitness();
       });
-      console.log('POPULATION FITNESS : ' + this.fitness);
-
       let indexA = 1;
       let parentA = s.random(1);
       let indexB = 1;
@@ -189,35 +205,35 @@ export default function sketch(s) {
       indexA--;
       indexB--;
 
-      //this parents contains two selected parents
+      //this.parents contains two selected parents
       this.parents.push(this.graphs[indexA]);
       this.parents.push(this.graphs[indexB]);
     }
 
+    //crosses two parents and produces a child. the child's dna is a combination of both parents' dna
     this.crossover = () => {
       let dna = [];
       let chromosomeSize = this.parents[0].size;
       //crosspoint is a random value between 0 and the number of vertices in the graph
       let crosspoint = s.floor(s.random(chromosomeSize));
       for (let i=1; i<=chromosomeSize; i++) {
-
         if (i < crosspoint) {
           dna.push(this.parents[0].vertices[i].colorIndex);
         } else {
           dna.push(this.parents[1].vertices[i].colorIndex);
         }
-        console.log('color ' + dna[i]);
       }
       //eliminate the worst graph and generate the new population element with given dna
-      this.graphs[this.worstGraphIndex] = new Graph(this.worstGraphIndex, dna);
-      this.graphs[this.worstGraphIndex].mutationBeta();
-      this.graphs[this.worstGraphIndex].mutationGamma();
-
+      this.graphs[this.EXIndex] = new Graph(this.EXIndex, dna);
+      //after we create the child, apply mutations to it.
+      //mutation will add variation to the population
+      this.graphs[this.EXIndex].mutationBeta();
+      this.graphs[this.EXIndex].mutationGamma();
     }
   }
 
+  //a component that is used just for displaying the current state of the results
   function Results() {
-    //a component that is used just for displaying the current state of the results
     this.fontSize = 32;
     this.fontColor = s.color(220, 220, 220);
     this.position = s.createVector(5, this.fontSize);
@@ -236,9 +252,11 @@ export default function sketch(s) {
 
       s.text('GENETIC', this.position.x, this.position.y*6);
       s.text('Colors used: ' + population.colorsUsed, this.position.x, this.position.y*7);
-      s.text('Population fitness: ' + s.floor(population.fitness), this.position.x, this.position.y*8);
-      s.text('Min fitness: ' + s.floor(population.minFitness), this.position.x, this.position.y*9);
-      s.text('Max fitness: ' + s.floor(population.maxFitness), this.position.x, this.position.y*10);
+      //fitness of the population
+      s.text('Fitness: ' + population.fitness.toFixed(5), this.position.x, this.position.y*8);
+      // s.text('Min fitness: ' + population.minFitness.toFixed(15), this.position.x, this.position.y*9);
+      // s.text('Max fitness: ' + population.maxFitness.toFixed(15), this.position.x, this.position.y*10);
+      s.text('Number of generation: ' + generationNumber, this.position.x, this.position.y*9);
 
     }
   }
@@ -248,10 +266,11 @@ export default function sketch(s) {
     this.index = index;
     //graph is made from vertices that are hold in this array
     this.vertices = [];
+    //fitness determines if the graph is going in the right direction
     this.fitness = -1;
+    //the graph will be selected as a parent of the population depending of its fitness
+    //the probability is just a normalized fitness value
     this.probability = 0;
-
-
 
     //number of vertices
     this.size = parseInt(graphData[0], 10);
@@ -301,27 +320,33 @@ export default function sketch(s) {
       });
     }
 
+    //for each vertex check if there is collision between him and his neighbors.
+    //if so, create the set of all colors used by its neighbors.
+    //assign new color to the vertex that is taken from all possible the set of all possible colors minus those that are taken by its neighbors
     this.mutationBeta = () => {
       let applyBeta = false;
       this.vertices.forEach(vertex => {
         applyBeta = false;
         vertex.neighbors.forEach(neighbour => {
+          //if there is a collision, apply beta mutation to this vertex
           if (vertex.colorIndex == this.vertices[neighbour].colorIndex) {
             applyBeta = true;
           }
         });
         if (applyBeta) {
+          //create set of colors taken by its neighbors
           let adjacentColors = new Set();
+          //available colors is the set of colors that we can assign to the vertex
           let availableColors = new Set();
           vertex.neighbors.forEach(neighbour => {
             adjacentColors.add(neighbour.colorIndex);
           });
           for (let i=0; i<colors.length; i++) {
+            //if the color from all colors array is not in the set of neighbors' colors, mark it as a valid color
             if (!adjacentColors.has(i)) {
               availableColors.add(i);
             }
           }
-
           //get random color from the valid colors set
           let r = Math.floor(Math.random() * availableColors.size);
           vertex.colorIndex = availableColors[r];
@@ -329,10 +354,10 @@ export default function sketch(s) {
       });
     }
 
+    //last, pretty straight-forward mutation that is applied with a given probability to a vertex that collides with its neighbors
     this.mutationGamma = () => {
       this.vertices.forEach(vertex => {
-        let r = s.random(1);
-        if (r <= GAMMA_RATE) {
+        if (s.random(1) <= GAMMA_RATE) {
           vertex.colorIndex = Math.floor(Math.random(colors.length));
         }
       });
@@ -391,15 +416,22 @@ export default function sketch(s) {
       });
       //every edge is counted twice, so we divide it by half to get the actual number of bad edges
       numberOfBadEdges = numberOfBadEdges/2;
+      //this is the abstract value. currentscenario can't be greater than this value, so it's a good measurement point
       let worstCaseScenario = this.size * this.size + this.size;
+      //if the graph has the better result (number of colors), the value colorUsed is assigned to the population as the best result
       if (population.colorsUsed <= 0 || population.colorsUsed > setOfColors.size) {
         population.colorsUsed = setOfColors.size;
       }
+      //current scenario determines if the graph is evolving in the right direction
+      //we want to eliminate all bad edges and optimize number of colors used
       let currentScenario = numberOfBadEdges * this.size + setOfColors.size;
+      //to sort fitness in ascending order, I divide worstCaseScenario by currentScenario
+      //the more fitness the graph has, the more likely it is to be picked
       this.fitness = worstCaseScenario/currentScenario;
       population.fitness += this.fitness;
     }
 
+    //the probability determines the chance of the graph to be picked during selection phase
     this.normalizeFitness = () => {
       this.probability = this.fitness/population.fitness;
     }
@@ -407,6 +439,7 @@ export default function sketch(s) {
   }
 
   function Vertex(index) {
+    this.radius = 25 + s.random(1)*10;
     //number of the vertex in the graph
     this.index = index;
 
@@ -425,8 +458,6 @@ export default function sketch(s) {
 
     //set of all vertex's neighbors
     this.neighbors = new Set();
-
-    this.radius = 25 + s.random(1)*10;
 
     //color index determines the value of color from the colors array (global)
     this.colorIndex = -1;
