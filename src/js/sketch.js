@@ -73,6 +73,7 @@ export default function sketch(s) {
     population.generate();
 
     population.selection();
+    population.showInfo();
 
     results = new Results();
   };
@@ -115,10 +116,9 @@ export default function sketch(s) {
     }
 
     this.showInfo = () => {
-      this.fitness = 0;
       this.graphs.forEach(graph => {
-        graph.calculateFitness();
-        console.log(graph.fitness);
+        console.log('F: ' + graph.fitness);
+        console.log('~~~~P: ' + graph.probability);
       });
     }
 
@@ -126,9 +126,9 @@ export default function sketch(s) {
       this.fitness = 0;
       this.graphs.forEach(graph => {
         graph.calculateFitness();
-        // console.log(graph.fitness);
+        graph.normalizeFitness();
       });
-      console.log(this.fitness);
+      console.log('POPULATION FITNESS : ' + this.fitness);
     }
   }
 
@@ -162,6 +162,7 @@ export default function sketch(s) {
     //graph is made from vertices that are hold in this array
     this.vertices = [];
     this.fitness = -1;
+    this.probability = 0;
 
     //number of vertices
     this.size = parseInt(graphData[0], 10);
@@ -264,6 +265,10 @@ export default function sketch(s) {
       let currentScenario = numberOfBadEdges * this.size + setOfColors.size;
       this.fitness = worstCaseScenario/currentScenario;
       population.fitness += this.fitness;
+    }
+
+    this.normalizeFitness = () => {
+      this.probability = this.fitness/population.fitness;
     }
 
   }
