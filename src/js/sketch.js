@@ -12,25 +12,52 @@ export default function sketch(s) {
   //graph in the data file
   let graphData;
 
+  //graph colored using greedy algorithm. it's used to determine the max possible number of colors
   let graph;
+
+  //population that consists of a given number of graphs.
   let population;
+
+  //component for showing results on the screen
   let results;
+
+  //array of all currently used colors
   let colors = new Array();
+
+  //number of colors assigned with greedy algorithm
   let greedyColorsNumber = 0;
+
+  //number of colors assigned with genetic algorithm in the current population
   let geneticColorsNumber = 0;
+
+  //p5.js canvas
   let _canvas;
+
+  //pivot point is the point that the graph moves around during mouse movement (when skew mode is activated)
   let pivotPoint = {
     x: s.mouseX,
     y: s.mouseY
   }
 
-
-
+  //draw mode makes the graph appear on the screen
+  //should be disabled for very large instances
   let drawMode = true;
+
+  //skew mode makes the graph moves according to the mouse movement
   let skewMode = false;
 
   s.preload = () => {
     graphData = s.loadStrings('../gc/' + dataFile );
+  }
+
+  s.mousePressed = () => {
+    if (skewMode) {
+      graph.assignSkew();
+    } else {
+      pivotPoint.x = s.mouseX;
+      pivotPoint.y = s.mouseY;
+    }
+    skewMode = !skewMode;
   }
 
   s.setup = () => {
@@ -45,21 +72,10 @@ export default function sketch(s) {
     population = new Population();
     population.generate();
 
-    population.showInfo();
+    population.selection();
 
-    // console.log(colors);
     results = new Results();
   };
-
-  s.mousePressed = () => {
-    if (skewMode) {
-      graph.assignSkew();
-    } else {
-      pivotPoint.x = s.mouseX;
-      pivotPoint.y = s.mouseY;
-    }
-    skewMode = !skewMode;
-  }
 
   s.draw = () => {
     //background gray color
@@ -77,6 +93,43 @@ export default function sketch(s) {
     }
     //show the results
     results.show();
+  }
+
+
+  function Population() {
+    this.size = POPULATION_SIZE;
+
+    this.graphs = [];
+
+    //the fitness of the whole population;
+    this.fitness = 0;
+
+    //for creating first generation
+    this.generate = () => {
+      //!! indexing from 1 !!
+      for (let i=1; i<=this.size; i++) {
+        this.graphs[i] = new Graph(i);
+        this.graphs[i].randomize();
+        this.graphs[i].mutationAlpha();
+      }
+    }
+
+    this.showInfo = () => {
+      this.fitness = 0;
+      this.graphs.forEach(graph => {
+        graph.calculateFitness();
+        console.log(graph.fitness);
+      });
+    }
+
+    this.selection = () => {
+      this.fitness = 0;
+      this.graphs.forEach(graph => {
+        graph.calculateFitness();
+        // console.log(graph.fitness);
+      });
+      console.log(this.fitness);
+    }
   }
 
   function Results() {
@@ -100,29 +153,6 @@ export default function sketch(s) {
       s.text('GENETIC', this.position.x, this.position.y*6);
       s.text('Colors used: ' + geneticColorsNumber, this.position.x, this.position.y*7);
 
-    }
-  }
-
-  function Population() {
-    this.size = POPULATION_SIZE;
-
-    this.graphs = [];
-
-    //for creating first generation
-    this.generate = () => {
-      //!! indexing from 1 !!
-      for (let i=1; i<=this.size; i++) {
-        this.graphs[i] = new Graph(i);
-        this.graphs[i].randomize();
-        this.graphs[i].mutationAlpha();
-      }
-    }
-
-    this.showInfo = () => {
-      this.graphs.forEach(graph => {
-        graph.calculateFitness();
-        console.log(graph.fitness);
-      });
     }
   }
 
@@ -174,7 +204,7 @@ export default function sketch(s) {
             vertex.colorIndex = s.floor(s.random(greedyColorsNumber));
           }
         });
-      })
+      });
     }
 
     //FOR DEBUGGING
@@ -214,7 +244,6 @@ export default function sketch(s) {
       });
     }
 
-
     //fitness value of the graph means how likely we are to pick this graph as a parent
     this.calculateFitness = () => {
       let setOfColors = new Set();
@@ -231,8 +260,10 @@ export default function sketch(s) {
       });
       //every edge is counted twice, so we divide it by half to get the actual number of bad edges
       numberOfBadEdges = numberOfBadEdges/2;
-
-      this.fitness = numberOfBadEdges * this.size + setOfColors.size;
+      let worstCaseScenario = this.size * this.size + this.size;
+      let currentScenario = numberOfBadEdges * this.size + setOfColors.size;
+      this.fitness = worstCaseScenario/currentScenario;
+      population.fitness += this.fitness;
     }
 
   }
