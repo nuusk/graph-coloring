@@ -9,7 +9,7 @@ export default function sketch(s) {
   //how many generations until we stop the algorithm
   const GENERATION_LIMIT = 1000000000;
 
-  const GAMMA_RATE = 0.1;
+  const GAMMA_RATE = 0.3;
 
   let generationNumber = 0;
 
@@ -52,20 +52,32 @@ export default function sketch(s) {
   //skew mode makes the graph moves according to the mouse movement
   let skewMode = false;
 
+  let pauseMode = false;
+  let evolve = true;
+  let stopAfterEvolving = false;
+
   s.preload = () => {
     graphData = s.loadStrings('../gc/' + dataFile );
   }
 
-  let buttons
+  let buttons = {};
 
   s.mousePressed = () => {
-    if (skewMode) {
-      graph.assignSkew();
-    } else {
-      pivotPoint.x = s.mouseX;
-      pivotPoint.y = s.mouseY;
+    if (
+      !buttons.pause.checkIfClicked() &&
+      !buttons.run.checkIfClicked() &&
+      !buttons.iteration.checkIfClicked() &&
+      !buttons.data.checkIfClicked()
+    ) {
+      skewMode = !skewMode;
+      console.log(skewMode);
+      if (skewMode) {
+        graph.assignSkew();
+      } else {
+        pivotPoint.x = s.mouseX;
+        pivotPoint.y = s.mouseY;
+      }
     }
-    skewMode = !skewMode;
   }
 
   s.setup = () => {
@@ -84,45 +96,88 @@ export default function sketch(s) {
     //population.showInfo();
 
     results = new Results();
+
+    buttons = {
+      pause: new Button(80, _windowHeight-80, s.color(150, 50, 50)),
+      run: new Button(160, _windowHeight-80, s.color(50, 150, 50)),
+      iteration: new Button(240, _windowHeight-80, s.color(50, 70, 100)),
+      data: new Button(320, _windowHeight-80, s.color(150, 150, 50))
+    };
+
+    buttons.pause.clicked = () => {
+      pauseMode != pauseMode;
+    }
+
+    buttons.run.clicked = () => {
+      stopAfterEvolving != stopAfterEvolving;
+    }
+
+    buttons.iteration.clicked = () => {
+      evolve = true;
+    }
+
+    buttons.data.clicked = () => {
+      console.log('not yet');
+    }
+
   };
 
   s.draw = () => {
-    if (generationNumber < GENERATION_LIMIT) {
-      //background gray color
-      if (skewMode) {
-        s.background(40, 50, 60);
-      } else {
-        s.background(44, 44, 44);
-      }
+    if (evolve) {
+      if (generationNumber < GENERATION_LIMIT) {
+        //background gray color
+        if (skewMode) {
+          s.background(40, 50, 60);
+        } else {
+          s.background(44, 44, 44);
+        }
 
-      population.selection();
-      population.crossover(); //creates new element and applies mutationBeta to it
+        population.selection();
+        population.crossover(); //creates new element and applies mutationBeta to it
 
-      if (drawMode) {
-        // GREEDY
-        //draw lines between vertices
-        // graph.drawLines();
-        //draw vertices on top of that
-        // graph.drawVertices()
+        if (drawMode) {
+          // GREEDY
+          //draw lines between vertices
+          // graph.drawLines();
+          //draw vertices on top of that
+          // graph.drawVertices()
+        }
+        //show the results
+        results.show();
+
+        buttons.pause.show();
+        buttons.run.show();
+        buttons.data.show();
+        buttons.iteration.show();
       }
-      //show the results
-      results.show();
+      generationNumber++;
     }
-    generationNumber++;
+    evolve = stopAfterEvolving ? false:true;
   }
 
-  function Button() {
-    this.radius = 30;
-    this.position.x = 100;
-    this.position.y = _windowHeight - 100;
+  function Button(x, y, color) {
+    this.radius = 70;
+    this.position = s.createVector(x, y);
+    this.color = color;
 
     this.show = () => {
       s.push();
       s.noStroke();
+      s.fill(this.color)
       s.ellipse(this.position.x, this.position.y, this.radius, this.radius);
       s.pop();
     }
+
+    this.checkIfClicked = () => {
+      let distanceFromMouse = s.dist(s.mouseX, s.mouseY, this.position.x, this.position.y);
+      if (distanceFromMouse < this.radius) {
+        this.clicked();
+        return true;
+      }
+      return false;
+    }
   }
+
 
   function Population() {
     this.size = POPULATION_SIZE;
