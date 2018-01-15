@@ -14,7 +14,7 @@ export default function sketch(s) {
   let generationNumber = 0;
 
   //raw file
-  let dataFile = '../../resources/data/sugar.txt';
+  let dataFile = '../../resources/data/chocolate.txt';
   //graph in the data file
   let graphData;
 
@@ -47,14 +47,11 @@ export default function sketch(s) {
 
   //draw mode makes the graph appear on the screen
   //should be disabled for very large instances
-  let drawMode = true;
-
+  let drawMode = false;
   //skew mode makes the graph moves according to the mouse movement
   let skewMode = false;
-
   let pauseMode = false;
   let evolve = true;
-  let stopAfterEvolving = false;
 
   s.preload = () => {
     graphData = s.loadStrings('../gc/' + dataFile );
@@ -65,10 +62,8 @@ export default function sketch(s) {
   s.mousePressed = () => {
     if (
       !buttons.pause.checkIfClicked() &&
-      !buttons.run.checkIfClicked() &&
       !buttons.iteration.checkIfClicked() &&
-      !buttons.data.checkIfClicked()
-      // !buttons.draw.checkIfClicked()
+      !buttons.draw.checkIfClicked()
     ) {
       console.log(skewMode);
       if (skewMode) {
@@ -100,10 +95,8 @@ export default function sketch(s) {
 
     buttons = {
       pause: new Button(80, _windowHeight-80, s.color(150, 50, 50), "pause"),
-      run: new Button(160, _windowHeight-80, s.color(50, 150, 50), "run"),
-      iteration: new Button(240, _windowHeight-80, s.color(50, 70, 100), "evolve"),
-      data: new Button(320, _windowHeight-80, s.color(150, 150, 50), "data"),
-      draw: new Button(400, _windowHeight-80, s.color(130, 40, 130), "draw")
+      iteration: new Button(160, _windowHeight-80, s.color(50, 70, 100), "evolve"),
+      draw: new Button(240, _windowHeight-80, s.color(150, 150, 50), "draw")
     };
 
     buttons.pause.clicked = () => {
@@ -111,16 +104,8 @@ export default function sketch(s) {
       console.log('pauseMode ' + pauseMode);
     }
 
-    buttons.run.clicked = () => {
-      stopAfterEvolving = !stopAfterEvolving;
-    }
-
     buttons.iteration.clicked = () => {
       evolve = true;
-    }
-
-    buttons.data.clicked = () => {
-      console.log('not yet');
     }
 
     buttons.draw.clicked = () => {
@@ -137,39 +122,35 @@ export default function sketch(s) {
   };
 
   s.draw = () => {
-    if (!pauseMode) {
-      if (evolve) {
-        if (generationNumber < GENERATION_LIMIT) {
-          //background gray color
-          if (skewMode) {
-            s.background(40, 50, 60);
-          } else {
-            s.background(44, 44, 44);
-          }
-
-          // population.selection();
-          // population.crossover(); //creates new element and applies mutationBeta to it
-
-          if (drawMode) {
-            // GREEDY
-            //draw lines between vertices
-            graph.drawLines();
-            //draw vertices on top of that
-            graph.drawVertices()
-          }
-          //show the results
-          results.show();
-
-          // buttons.pause.show();
-          // buttons.run.show();
-          // buttons.data.show();
-          // buttons.iteration.show();
-          // buttons.draw.s2how();
+    if (evolve) {
+      if (generationNumber < GENERATION_LIMIT) {
+        //background gray color
+        if (skewMode) {
+          s.background(40, 50, 60);
+        } else {
+          s.background(44, 44, 44);
         }
-        // generationNumber++;
+
+        population.selection();
+        population.crossover(); //creates new element and applies mutationBeta to it
+
+        if (drawMode) {
+          // GREEDY
+          //draw lines between vertices
+          graph.drawLines();
+          //draw vertices on top of that
+          graph.drawVertices()
+        }
+        //show the results
+        results.show();
+
+        buttons.pause.show();
+        buttons.iteration.show();
+        buttons.draw.show();
       }
-      evolve = stopAfterEvolving ? false:true;
+      generationNumber++;
     }
+    evolve = pauseMode ? false:true;
   }
 
   function Button(x, y, color, description) {
@@ -324,16 +305,19 @@ export default function sketch(s) {
       } else {
         s.text(' ~ (click to skew) ~', this.position.x, this.position.y);
       }
+      if (pauseMode ) {
+        s.text(' ~ pause ~', this.position.x + 280, this.position.y);
+      }
       s.text('GREEDY', this.position.x, this.position.y*3);
       s.text('Colors used: ' + greedyColorsNumber, this.position.x, this.position.y*4);
 
-      // s.text('GENETIC', this.position.x, this.position.y*6);
-      // s.text('Colors used: ' + population.colorsUsed, this.position.x, this.position.y*7);
-      // //fitness of the population
-      // s.text('Fitness: ' + population.fitness.toFixed(5), this.position.x, this.position.y*8);
-      // // s.text('Min fitness: ' + population.minFitness.toFixed(15), this.position.x, this.position.y*9);
-      // // s.text('Max fitness: ' + population.maxFitness.toFixed(15), this.position.x, this.position.y*10);
-      // s.text('Number of generation: ' + generationNumber, this.position.x, this.position.y*9);
+      s.text('GENETIC', this.position.x, this.position.y*6);
+      s.text('Colors used: ' + population.colorsUsed, this.position.x, this.position.y*7);
+      //fitness of the population
+      s.text('Fitness: ' + population.fitness.toFixed(5), this.position.x, this.position.y*8);
+      // s.text('Min fitness: ' + population.minFitness.toFixed(15), this.position.x, this.position.y*9);
+      // s.text('Max fitness: ' + population.maxFitness.toFixed(15), this.position.x, this.position.y*10);
+      s.text('Number of generation: ' + generationNumber, this.position.x, this.position.y*9);
 
     }
   }
