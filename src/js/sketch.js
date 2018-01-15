@@ -14,7 +14,7 @@ export default function sketch(s) {
   let generationNumber = 0;
 
   //raw file
-  let dataFile = '../../resources/data/chocolate.txt';
+  let dataFile = '../../resources/data/sugar.txt';
   //graph in the data file
   let graphData;
 
@@ -47,7 +47,7 @@ export default function sketch(s) {
 
   //draw mode makes the graph appear on the screen
   //should be disabled for very large instances
-  let drawMode = false;
+  let drawMode = true;
 
   //skew mode makes the graph moves according to the mouse movement
   let skewMode = false;
@@ -147,8 +147,8 @@ export default function sketch(s) {
             s.background(44, 44, 44);
           }
 
-          population.selection();
-          population.crossover(); //creates new element and applies mutationBeta to it
+          // population.selection();
+          // population.crossover(); //creates new element and applies mutationBeta to it
 
           if (drawMode) {
             // GREEDY
@@ -160,13 +160,13 @@ export default function sketch(s) {
           //show the results
           results.show();
 
-          buttons.pause.show();
-          buttons.run.show();
-          buttons.data.show();
-          buttons.iteration.show();
-          // buttons.draw.show();
+          // buttons.pause.show();
+          // buttons.run.show();
+          // buttons.data.show();
+          // buttons.iteration.show();
+          // buttons.draw.s2how();
         }
-        generationNumber++;
+        // generationNumber++;
       }
       evolve = stopAfterEvolving ? false:true;
     }
@@ -327,13 +327,13 @@ export default function sketch(s) {
       s.text('GREEDY', this.position.x, this.position.y*3);
       s.text('Colors used: ' + greedyColorsNumber, this.position.x, this.position.y*4);
 
-      s.text('GENETIC', this.position.x, this.position.y*6);
-      s.text('Colors used: ' + population.colorsUsed, this.position.x, this.position.y*7);
-      //fitness of the population
-      s.text('Fitness: ' + population.fitness.toFixed(5), this.position.x, this.position.y*8);
-      // s.text('Min fitness: ' + population.minFitness.toFixed(15), this.position.x, this.position.y*9);
-      // s.text('Max fitness: ' + population.maxFitness.toFixed(15), this.position.x, this.position.y*10);
-      s.text('Number of generation: ' + generationNumber, this.position.x, this.position.y*9);
+      // s.text('GENETIC', this.position.x, this.position.y*6);
+      // s.text('Colors used: ' + population.colorsUsed, this.position.x, this.position.y*7);
+      // //fitness of the population
+      // s.text('Fitness: ' + population.fitness.toFixed(5), this.position.x, this.position.y*8);
+      // // s.text('Min fitness: ' + population.minFitness.toFixed(15), this.position.x, this.position.y*9);
+      // // s.text('Max fitness: ' + population.maxFitness.toFixed(15), this.position.x, this.position.y*10);
+      // s.text('Number of generation: ' + generationNumber, this.position.x, this.position.y*9);
 
     }
   }
