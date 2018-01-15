@@ -9,7 +9,7 @@ export default function sketch(s) {
   //how many generations until we stop the algorithm
   const GENERATION_LIMIT = 1000000000;
 
-  const GAMMA_RATE = 0.3;
+  const GAMMA_RATE = 0.4;
 
   let generationNumber = 0;
 
@@ -68,8 +68,8 @@ export default function sketch(s) {
       !buttons.run.checkIfClicked() &&
       !buttons.iteration.checkIfClicked() &&
       !buttons.data.checkIfClicked()
+      // !buttons.draw.checkIfClicked()
     ) {
-      skewMode = !skewMode;
       console.log(skewMode);
       if (skewMode) {
         graph.assignSkew();
@@ -77,6 +77,7 @@ export default function sketch(s) {
         pivotPoint.x = s.mouseX;
         pivotPoint.y = s.mouseY;
       }
+      skewMode = !skewMode;
     }
   }
 
@@ -98,18 +99,20 @@ export default function sketch(s) {
     results = new Results();
 
     buttons = {
-      pause: new Button(80, _windowHeight-80, s.color(150, 50, 50)),
-      run: new Button(160, _windowHeight-80, s.color(50, 150, 50)),
-      iteration: new Button(240, _windowHeight-80, s.color(50, 70, 100)),
-      data: new Button(320, _windowHeight-80, s.color(150, 150, 50))
+      pause: new Button(80, _windowHeight-80, s.color(150, 50, 50), "pause"),
+      run: new Button(160, _windowHeight-80, s.color(50, 150, 50), "run"),
+      iteration: new Button(240, _windowHeight-80, s.color(50, 70, 100), "evolve"),
+      data: new Button(320, _windowHeight-80, s.color(150, 150, 50), "data"),
+      draw: new Button(400, _windowHeight-80, s.color(130, 40, 130), "draw")
     };
 
     buttons.pause.clicked = () => {
-      pauseMode != pauseMode;
+      pauseMode = !pauseMode;
+      console.log('pauseMode ' + pauseMode);
     }
 
     buttons.run.clicked = () => {
-      stopAfterEvolving != stopAfterEvolving;
+      stopAfterEvolving = !stopAfterEvolving;
     }
 
     buttons.iteration.clicked = () => {
@@ -120,51 +123,70 @@ export default function sketch(s) {
       console.log('not yet');
     }
 
+    buttons.draw.clicked = () => {
+      pauseMode = true;
+      s.background(44, 44, 44);
+      population.selection();
+      population.crossover(); //creates new element and applies mutationBeta to it
+      console.log(population.graphs[population.EXIndex]);
+      population.graphs[population.EXIndex].drawLines();
+      population.graphs[population.EXIndex].drawVertices();
+    }
+
+
   };
 
   s.draw = () => {
-    if (evolve) {
-      if (generationNumber < GENERATION_LIMIT) {
-        //background gray color
-        if (skewMode) {
-          s.background(40, 50, 60);
-        } else {
-          s.background(44, 44, 44);
+    if (!pauseMode) {
+      if (evolve) {
+        if (generationNumber < GENERATION_LIMIT) {
+          //background gray color
+          if (skewMode) {
+            s.background(40, 50, 60);
+          } else {
+            s.background(44, 44, 44);
+          }
+
+          population.selection();
+          population.crossover(); //creates new element and applies mutationBeta to it
+
+          if (drawMode) {
+            // GREEDY
+            //draw lines between vertices
+            graph.drawLines();
+            //draw vertices on top of that
+            graph.drawVertices()
+          }
+          //show the results
+          results.show();
+
+          buttons.pause.show();
+          buttons.run.show();
+          buttons.data.show();
+          buttons.iteration.show();
+          // buttons.draw.show();
         }
-
-        population.selection();
-        population.crossover(); //creates new element and applies mutationBeta to it
-
-        if (drawMode) {
-          // GREEDY
-          //draw lines between vertices
-          // graph.drawLines();
-          //draw vertices on top of that
-          // graph.drawVertices()
-        }
-        //show the results
-        results.show();
-
-        buttons.pause.show();
-        buttons.run.show();
-        buttons.data.show();
-        buttons.iteration.show();
+        generationNumber++;
       }
-      generationNumber++;
+      evolve = stopAfterEvolving ? false:true;
     }
-    evolve = stopAfterEvolving ? false:true;
   }
 
-  function Button(x, y, color) {
+  function Button(x, y, color, description) {
     this.radius = 70;
     this.position = s.createVector(x, y);
     this.color = color;
+    this.description = description;
 
     this.show = () => {
       s.push();
       s.noStroke();
-      s.fill(this.color)
+      s.fill(this.color);
       s.ellipse(this.position.x, this.position.y, this.radius, this.radius);
+      s.fill(s.color(220,220,220));
+      s.textSize(20);
+      s.textAlign(s.CENTER);
+      s.text(this.description, this.position.x, this.position.y+10);
       s.pop();
     }
 
@@ -332,11 +354,11 @@ export default function sketch(s) {
 
     //create vertices
     //!! INDEXING FROM 1 !!
+    console.log(dna);
     for (let i=1; i<=this.size; i++) {
       this.vertices[i] = new Vertex(i);
       if (dna) {
-        console.log('created new graph with given dna');
-        this.vertices[i].colorIndex = dna[i];
+        this.vertices[i].colorIndex = dna[i-1];
       }
     }
 
@@ -404,7 +426,9 @@ export default function sketch(s) {
           }
           //get random color from the valid colors set
           let r = Math.floor(Math.random() * availableColors.size);
-          vertex.colorIndex = availableColors[r];
+          if (availableColors[r]) {
+            vertex.colorIndex = availableColors[r];
+          }
         }
       });
     }
@@ -537,6 +561,7 @@ export default function sketch(s) {
     //draw lines between this vertex and its neighbors
     this.connectNeighbors = () => {
       this.neighbors.forEach(neighbourIndex => {
+        console.log(neighbourIndex + ' .. drew a line');
         s.push();
         s.stroke(skewMode ? 200:12);
         let skewedPositionA = skewMode ? this.calculatePosition() : [this.position.x, this.position.y];
@@ -556,7 +581,7 @@ export default function sketch(s) {
         if (alreadyUsed.has(i)) continue;
         else {
           //assign the color that already exists
-          this.colorIndex = i;
+            this.colorIndex = i;
           return;
         }
       }
